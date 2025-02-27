@@ -8,7 +8,7 @@ jobs:
           date > generated.txt
           # Note: the following account information will not work on GHES
           git config user.name "github-actions[bot]"
-          git config user.email "rajahassan120478@gmail.com"
+          git config user.email "$GIT_COMMITTER_EMAIL"
           git add .
           git commit -m "generated"
           git push
