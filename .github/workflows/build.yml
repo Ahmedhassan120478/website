@@ -1,14 +1,28 @@
-on: push
+name: Push Changes to Repo
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  build:
+  push_changes:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - run: |
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Make changes
+        run: |
           date > generated.txt
-          # Note: the following account information will not work on GHES
-          git config user.name "github-actions[bot]"
-          git config user.email "$GIT_COMMITTER_EMAIL"
+          git config --global user.email "rajahassan120478@gmail.com"
+          git config --global user.name "Ahmedhassan120478"
+
+      - name: Commit and Push changes
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
           git add .
-          git commit -m "generated"
-          git push
+          git commit -m "Automated commit from GitHub Actions"
+          git push https://Ahmedhassan120478:${{ secrets.GH_PAT }}@github.com/Ahmedhassan120478/website.git HEAD:main
