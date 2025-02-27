@@ -19,10 +19,14 @@ jobs:
           git config --global user.email "rajahassan120478@gmail.com"
           git config --global user.name "Ahmedhassan120478"
 
-      - name: Commit and Push changes
+      - name: Authenticate with PAT
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
+
+      - name: Commit and Push changes
+        run: |
           git add .
-          git commit -m "Automated commit from GitHub Actions"
-          git push https://Ahmedhassan120478:${{ secrets.GH_PAT }}@github.com/Ahmedhassan120478/website.git HEAD:main
+          git commit -m "Automated commit from GitHub Actions" || echo "No changes to commit"
+          git push origin HEAD:main
