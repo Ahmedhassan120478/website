@@ -1,40 +1,111 @@
-name: Build and Push Docker Image
-
+name: build_and_push_to_manifest
+env:
+  IMAGE_REGISTRY_REPO: hassan120478/website
+  APP-NAME: website
 on:
   push:
     branches:
-      - main  # Runs when code is pushed to `main` branch
+      - 'main'
 
 jobs:
-  build-and-push:
+  build_and_push_image:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Checkout
+        uses: actions/checkout@v2.4.2
+      -
+        name: Login to registry
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Get latest image tag
-        id: get-tag
+          
+      -
+        name: Build docker image
         run: |
-          TAG=$(curl -s "https://hub.docker.com/v2/repositories/hassan120478/website/tags" | jq -r '.results[].name' | grep -Eo '[0-9]+' | sort -nr | head -n1)
-          if [ -z "$TAG" ]; then TAG=0; fi
-          NEW_TAG=$((TAG + 1))
-          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          docker build -f Dockerfile -t $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8} .
+      - name: Push image to gitlab registry
+        run: |
+          docker push $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push_image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.2
         with:
-          context: .
-          push: true
-          tags: |
-            hassan120478/website:web-${{ env.NEW_TAG }}
-            hassan120478/website:latest
+          repository: Ahmedhassan120478/manifest/helm
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+      - name: image_update
+        run: |
+          ls
+
+      - name: Update Images via yq
+        shell: bash
+        run: |
+          ls
+          cd webapp_helm
+          ls
+          export commitnum=${GITHUB_SHA::8}
+          echo $commitnum
+          yq e -i '.image.tag = env(commitnum)' values.yaml
+          cat values.yaml
+          
+      - name: Push manifests changes to ArgoCD's manifest repo
+        run: |
+          git config user.name ${GITHUB_ACTOR}
+          git config user.email ${GITHUB_ACTOR}@github.com
+          git diff
+          git add .
+          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
+          git push          
+
+
+#  deploy_to_dev:
+#    runs-on: ubuntu-latest
+#    needs: build_and_push_image
+##    needs:
+##      - build_and_push_image
+#    steps:
+#      - name: Setup User and email for GIT next push
+#        run: |
+#          git config --global user.email "action@github.com"
+#          git config --global user.name ${{ github.actor }}
+#          git config -l
+#
+#      - name: Display the current folders
+#        run: |
+#          pwd
+#          ls
+#
+#      - name: Clone Deployment Manifests Repo
+#        uses: actions/checkout@v2
+#        with:
+#          repository: pakdevops/manifests
+#          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+#          path: manifests
+#      - name: Update Images via yq
+#        shell: bash
+#        run: |
+#          ls
+#          cd manifests/dev-env/site1
+#          ls
+#          export commitnum=${GITHUB_SHA::8}
+#          echo $commitnum
+#          yq e -i '.image.tag = env(commitnum)' values.yaml
+#          cat values.yaml
+#          
+#      - name: Push manifests changes to ArgoCD's manifest repo
+#        run: |
+#          cd manifests
+#          git config user.name ${GITHUB_ACTOR}
+#          git config user.email ${GITHUB_ACTOR}@github.com
+#          git diff
+#          git add .
+#          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
+#          git push
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
