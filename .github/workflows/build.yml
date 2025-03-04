@@ -37,6 +37,8 @@ jobs:
         with:
           repository: Ahmedhassan120478/manifest
           token: ${{ secrets.GH_PAT}}
+          path: manifest  # Clone the repo into 'manifest' directory
+
 
       - name: image_update
         run: |
@@ -46,7 +48,7 @@ jobs:
         shell: bash
         run: |
           ls
-          cd webapp_helm
+          cd manifest/helm
           ls
           export commitnum=${GITHUB_SHA::8}
           echo $commitnum
