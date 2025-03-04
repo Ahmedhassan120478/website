@@ -60,9 +60,9 @@ jobs:
 #          git config user.name ${GITHUB_ACTOR}
 #          git config user.email ${GITHUB_ACTOR}@github.com
 #          git diff
-#          git add .
-#          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
-#          git push          
+          git add .
+          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
+          git push          
 
 
 #  deploy_to_dev:
