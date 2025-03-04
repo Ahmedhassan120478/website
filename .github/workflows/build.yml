@@ -55,15 +55,14 @@ jobs:
           yq e -i '.image.tag = env(commitnum)' values.yaml
           cat values.yaml
 
-#      - name: Push manifests changes to ArgoCD's manifest repo
-#        run: |
-#          git config user.name ${GITHUB_ACTOR}
-#          git config user.email ${GITHUB_ACTOR}@github.com
-#          git diff
+      - name: Push manifest changes
+        run: |
+          cd manifest
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git add .
-          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
-          git push          
-
+          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA::7}_Updated image tag"
+          git push
 
 #  deploy_to_dev:
 #    runs-on: ubuntu-latest
