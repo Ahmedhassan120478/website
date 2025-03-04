@@ -36,7 +36,8 @@ jobs:
         uses: actions/checkout@v2.4.2
         with:
           repository: Ahmedhassan120478/manifest
-          token: ${{ secrets.DOCKERHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT
+ }}
 
       - name: image_update
         run: |
