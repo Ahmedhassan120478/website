@@ -24,7 +24,7 @@ jobs:
         name: Build docker image
         run: |
           docker build -f Dockerfile -t $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8} .
-      - name: Push image to gitlab registry
+      - name: Push image to github registry
         run: |
           docker push $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8}
 
