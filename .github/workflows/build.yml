@@ -13,18 +13,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.2
-      -
-        name: Login to registry
+
+      - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           
-      -
-        name: Build docker image
+      - name: Build Docker Image
         run: |
           docker build -f Dockerfile -t $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8} .
-      - name: Push image to github registry
+
+      - name: Push Image to Docker Hub
         run: |
           docker push $IMAGE_REGISTRY_REPO:${GITHUB_SHA::8}
 
@@ -32,81 +32,33 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push_image
     steps:
-      - name: Checkout
+      - name: Checkout Manifest Repository
         uses: actions/checkout@v2.4.2
         with:
           repository: Ahmedhassan120478/manifest
           token: ${{ secrets.GH_PAT}}
-          path: manifest  # Clone the repo into 'manifest' directory
+          path: manifest  # Clone into 'manifest' directory
 
-
-      - name: image_update
-        run: |
-          ls
-
-      - name: Update Images via yq
+      - name: Update Image in Helm Chart
         shell: bash
         run: |
-          ls
           cd manifest/helm
-          ls
           export commitnum=${GITHUB_SHA::8}
-          echo $commitnum
+          echo "Updating image repository and tag..."
+          yq e -i '.image.repository = "hassan120478/website"' values.yaml
           yq e -i '.image.tag = env(commitnum)' values.yaml
+          echo "Updated values.yaml:"
           cat values.yaml
 
-      - name: Push manifest changes
+      - name: Push Updated Helm Manifest
         run: |
           cd manifest
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git add .
-          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA::7}_Updated image tag"
+          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA::7}_Updated image repository and tag"
           git push
 
-#  deploy_to_dev:
-#    runs-on: ubuntu-latest
-#    needs: build_and_push_image
-##    needs:
-##      - build_and_push_image
-#    steps:
-#      - name: Setup User and email for GIT next push
-#        run: |
-#          git config --global user.email "action@github.com"
-#          git config --global user.name ${{ github.actor }}
-#          git config -l
-#
-#      - name: Display the current folders
-#        run: |
-#          pwd
-#          ls
-#
-#      - name: Clone Deployment Manifests Repo
-#        uses: actions/checkout@v2
-#        with:
-#          repository: pakdevops/manifests
-#          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-#          path: manifests
-#      - name: Update Images via yq
-#        shell: bash
-#        run: |
-#          ls
-#          cd manifests/dev-env/site1
-#          ls
-#          export commitnum=${GITHUB_SHA::8}
-#          echo $commitnum
-#          yq e -i '.image.tag = env(commitnum)' values.yaml
-#          cat values.yaml
-#          
-#      - name: Push manifests changes to ArgoCD's manifest repo
-#        run: |
-#          cd manifests
-#          git config user.name ${GITHUB_ACTOR}
-#          git config user.email ${GITHUB_ACTOR}@github.com
-#          git diff
-#          git add .
-#          git commit -m "${GITHUB_REPOSITORY}_${GITHUB_JOB}_${GITHUB_SHA:0:7}_details:${CI_COMMIT_MESSAGE}"
-#          git push
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
